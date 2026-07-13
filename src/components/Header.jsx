@@ -21,7 +21,7 @@ export default function Header({ search, onSearch, onSearchFocusJournal }) {
     <header className="top-bar">
       <div className="top-bar-inner">
         <div className="brand">
-          <img className="brand-logo" src="/pwa-192.png" alt="" aria-hidden="true" />
+          <img className="brand-logo" src={`${import.meta.env.BASE_URL}pwa-192.png`} alt="" aria-hidden="true" />
           <h1 className="brand-title">Trading Journal</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

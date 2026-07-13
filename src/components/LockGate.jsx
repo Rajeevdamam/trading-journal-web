@@ -78,7 +78,7 @@ export default function LockGate({ children }) {
   return (
     <div className="lock-screen">
       <div className="card lock-card">
-        <img className="brand-logo lock-logo" src="/pwa-192.png" alt="" aria-hidden="true" />
+        <img className="brand-logo lock-logo" src={`${import.meta.env.BASE_URL}pwa-192.png`} alt="" aria-hidden="true" />
         <h1 className="brand-title" style={{ fontSize: 24 }}>Trading Journal</h1>
 
         {state === 'locked' && (
