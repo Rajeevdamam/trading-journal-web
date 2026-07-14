@@ -6,9 +6,9 @@ import { pnl, fmtMoney, dayLabel, monthKey, monthLabel, netsByCurrency } from '.
 import emptyJournalImg from '../assets/empty-states/empty-journal.png'
 import emptySearchImg from '../assets/empty-states/empty-search.png'
 
-function NetLine({ trades }) {
+function NetLine({ trades, suffix = true }) {
   const nets = netsByCurrency(trades)
-  if (!nets.length) return <span className="pos">{fmtMoney(0)} Net</span>
+  if (!nets.length) return <span className="pos">{fmtMoney(0)}{suffix ? ' Net' : ''}</span>
   return (
     <>
       {nets.map(([c, net], i) => (
@@ -17,7 +17,7 @@ function NetLine({ trades }) {
           <span className={net >= 0 ? 'pos' : 'neg'}>{fmtMoney(net, c)}</span>
         </span>
       ))}
-      <span className="muted"> Net</span>
+      {suffix && <span className="muted"> Net</span>}
     </>
   )
 }
@@ -136,7 +136,14 @@ export default function Journal({ trades, search, onNewEntry, onEdit, onDelete, 
               </div>
               {month.days.map((day) => (
                 <div key={day.label}>
-                  <div className="day-header"><span>{day.label}</span></div>
+                  <div className="day-header">
+                    <span className="day-label">{day.label}</span>
+                    {netsByCurrency(day.trades).map(([c, net]) => (
+                      <span key={c} className={`day-pill num ${net >= 0 ? 'pos' : 'neg'}`}>
+                        {fmtMoney(net, c)}
+                      </span>
+                    ))}
+                  </div>
                   {day.trades.map((t) => (
                     <TradeCard key={t.id} trade={t} onEdit={onEdit} onDelete={onDelete} onEmotionChange={onEmotionChange} />
                   ))}
