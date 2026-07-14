@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import { computeStats, fmtMoney, netsByCurrency, tradesToCsv } from '../lib/utils.js'
+import { parseGrowwStatement } from '../lib/growwImport.js'
 import {
   lockEnabled,
   enrollFingerprint,
@@ -9,7 +10,7 @@ import {
   createRecoveryCode,
 } from '../lib/webauthn.js'
 
-export default function Profile({ trades, onReset, excel }) {
+export default function Profile({ trades, addManyTrades, onReset, excel }) {
   const stats = computeStats(trades)
   const nets = netsByCurrency(trades)
   const [confirmingReset, setConfirmingReset] = useState(false)
@@ -18,6 +19,8 @@ export default function Profile({ trades, onReset, excel }) {
   const [lockMsg, setLockMsg] = useState(null)
   const [recoveryCode, setRecoveryCode] = useState(null)
   const [syncMsg, setSyncMsg] = useState(null)
+  const [importMsg, setImportMsg] = useState(null)
+  const fileRef = useRef(null)
 
   useEffect(() => {
     platformAuthenticatorAvailable().then(setBioAvailable)
@@ -60,6 +63,40 @@ export default function Profile({ trades, onReset, excel }) {
       setSyncMsg('Synced to ' + excel.fileName)
     } catch {
       setSyncMsg('Sync failed — check the file is not open in Excel.')
+    }
+  }
+
+  const importGroww = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    setImportMsg(null)
+    try {
+      const isXlsx = /\.xlsx?$/i.test(file.name)
+      const content = isXlsx ? await file.arrayBuffer() : await file.text()
+      const parsed = await parseGrowwStatement(content, file.name)
+      if (!parsed.length) {
+        setImportMsg('No trades found in that file — is it a Groww P&L statement?')
+        return
+      }
+      const seen = new Set(trades.map((t) => `${t.ts}|${t.entry}|${t.exit}|${t.size}`))
+      const fresh = []
+      for (const t of parsed) {
+        const key = `${t.ts}|${t.entry}|${t.exit}|${t.size}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        fresh.push(t)
+      }
+      if (fresh.length) addManyTrades(fresh)
+      const skipped = parsed.length - fresh.length
+      setImportMsg(
+        skipped
+          ? `${fresh.length} trade${fresh.length === 1 ? '' : 's'} imported, ${skipped} skipped (duplicates)`
+          : `Imported ${fresh.length} trade${fresh.length === 1 ? '' : 's'}`
+      )
+    } catch (err) {
+      console.error('Groww import failed', err)
+      setImportMsg('Could not read that file. Export the P&L statement from Groww as .csv or .xlsx and try again.')
     }
   }
 
@@ -207,6 +244,23 @@ export default function Profile({ trades, onReset, excel }) {
             <span className="spacer" />
             <Icon name="chevron_right" style={{ color: 'var(--tertiary)' }} />
           </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,.xlsx"
+            style={{ display: 'none' }}
+            onChange={importGroww}
+          />
+          <button className="action-row" onClick={() => fileRef.current.click()}>
+            <Icon name="upload_file" />
+            <span>
+              Import Groww statement
+              <span className="action-sub">Upload your P&amp;L statement (.csv or .xlsx) from Groww</span>
+            </span>
+            <span className="spacer" />
+            <Icon name="chevron_right" style={{ color: 'var(--tertiary)' }} />
+          </button>
+          {importMsg && <p className="muted" style={{ fontSize: 13, textAlign: 'center' }}>{importMsg}</p>}
           {!confirmingReset ? (
             <button className="action-row danger" onClick={() => setConfirmingReset(true)}>
               <Icon name="restart_alt" />

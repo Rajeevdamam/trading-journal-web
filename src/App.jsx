@@ -18,7 +18,7 @@ export default function App() {
 }
 
 function JournalApp() {
-  const { trades, addTrade, updateTrade, deleteTrade, resetAll, excel } = useTrades()
+  const { trades, addTrade, addManyTrades, updateTrade, deleteTrade, resetAll, excel } = useTrades()
   const [view, setView] = useState('dashboard')
   const [search, setSearch] = useState('')
   const [editingTrade, setEditingTrade] = useState(null)
@@ -85,7 +85,9 @@ function JournalApp() {
         />
       )}
       {view === 'psychology' && <Psychology trades={trades} onReview={() => navigate('journal')} />}
-      {view === 'profile' && <Profile trades={trades} onReset={resetAll} excel={excel} />}
+      {view === 'profile' && (
+        <Profile trades={trades} addManyTrades={addManyTrades} onReset={resetAll} excel={excel} />
+      )}
 
       <BottomNav view={view} onNavigate={navigate} />
     </div>

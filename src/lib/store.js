@@ -173,6 +173,19 @@ export function useTrades() {
     setTrades((prev) => [...prev, { ...trade, id: 't' + Date.now(), ts: trade.ts ?? Date.now() }])
   }, [])
 
+  // Batch insert (statement imports). A single setTrades call with indexed
+  // ids — looping addTrade would mint duplicate 't' + Date.now() ids.
+  // migrate() runs on the merged list so imported trades get their emotion
+  // auto-inferred immediately instead of waiting for the next app load.
+  const addManyTrades = useCallback((newTrades) => {
+    setTrades((prev) =>
+      migrate([
+        ...prev,
+        ...newTrades.map((t, i) => ({ ...t, id: 't' + (Date.now() + i), ts: t.ts ?? Date.now() })),
+      ])
+    )
+  }, [])
+
   const updateTrade = useCallback((id, patch) => {
     setTrades((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)))
   }, [])
@@ -187,7 +200,7 @@ export function useTrades() {
   }, [])
 
   return {
-    trades, addTrade, updateTrade, deleteTrade, resetAll,
+    trades, addTrade, addManyTrades, updateTrade, deleteTrade, resetAll,
     excel: { ...excel, connectNewFile, connectExistingFile, grantExcelAccess, disconnectExcel, syncNow },
   }
 }
